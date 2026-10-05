@@ -1,0 +1,9 @@
+numpy<2
+mediapipe==0.10.14
+opencv-python
+tensorflow
+scikit-learn
+matplotlib
+pyttsx3
+anthropic
+python-dotenv
