@@ -1,0 +1,26 @@
+# SignBridge AI — Training configuration (Phase 3)
+# Values are read by ml/train.py with sensible defaults.
+
+window: 32
+input_dim: 193
+random_seed: 42
+
+epochs: 20
+batch_size: 16
+lr: 0.001
+patience: 5
+
+train_frac: 0.8
+val_frac: 0.1
+test_frac: 0.1
+
+architectures:
+  - cnn1d
+  - bigru
+  - transformer
+
+device: cpu
+
+data_dir: ml/datasets
+weights_dir: ml/weights
+reports_dir: ml/reports
