@@ -1,4 +1,7 @@
-"""Pydantic data models and validation schemas for SignBridge AI."""
+"""Pydantic data models and validation schemas for SignBridge AI.
+
+Strictly adheres to the One-Way Compose pipeline specification.
+"""
 
 from enum import StrEnum
 
@@ -7,6 +10,7 @@ from pydantic import BaseModel, Field
 
 class ServiceStatus(StrEnum):
     """Health status enum."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     OFFLINE = "offline"
@@ -14,6 +18,7 @@ class ServiceStatus(StrEnum):
 
 class HealthResponse(BaseModel):
     """Response model for /health endpoint."""
+
     status: ServiceStatus = Field(default=ServiceStatus.HEALTHY, description="Backend service status")
     version: str = Field(default="0.1.0", description="API version")
     environment: str = Field(..., description="Runtime environment (development/production)")
@@ -24,74 +29,84 @@ class HealthResponse(BaseModel):
 
 class RecognizedToken(BaseModel):
     """A single recognized sign token with confidence."""
-    token: str = Field(..., description="ISL gloss identifier (e.g. HELP, PAIN)")
+
+    token: str = Field(..., description="ISL gloss identifier (e.g. HELP, WATER)")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Model confidence score (0 to 1)")
     timestamp_ms: int | None = Field(default=None, description="Detection timestamp in ms")
 
 
 class IntentEnum(StrEnum):
-    """Supported intent categories for ISL conversation."""
-    GREETING = "greeting"
+    """Supported intent categories for ISL sentence generation."""
+
+    STATEMENT = "statement"
     QUESTION = "question"
     REQUEST = "request"
-    EMERGENCY = "emergency"
-    CONFIRMATION = "confirmation"
+    GREETING = "greeting"
+    THANKS = "thanks"
+    APOLOGY = "apology"
     NEGATION = "negation"
-    SMALLTALK = "smalltalk"
     UNCLEAR = "unclear"
 
 
-class InterpretRequest(BaseModel):
-    """Request payload for Stage A Interpret."""
-    tokens: list[RecognizedToken] = Field(..., description="Sequence of recognized or typed glosses")
+class ToneEnum(StrEnum):
+    """Signer's preferred speaking tone."""
+
+    CASUAL = "casual"
+    POLITE = "polite"
+    NEUTRAL = "neutral"
+
+
+class ScenarioEnum(StrEnum):
+    """Predefined conversation scenarios for disambiguation."""
+
+    GENERAL = "general"
+    SHOP = "shop"
+    RESTAURANT = "restaurant"
+    BUS = "bus"
+    HOSPITAL_RECEPTION = "hospital_reception"
+    OFFICE = "office"
+
+
+class SignerProfile(BaseModel):
+    """Signer profile preferences for personalized voice synthesis."""
+
+    name: str = Field(default="Signer", description="Signer name or identifier")
+    tone: ToneEnum = Field(default=ToneEnum.POLITE, description="Preferred conversational tone")
+
+
+class ComposeRequest(BaseModel):
+    """Request payload for the single Compose LLM call."""
+
+    tokens: list[RecognizedToken] = Field(..., description="Recognized ISL tokens with confidences")
+    scenario: ScenarioEnum = Field(default=ScenarioEnum.GENERAL, description="Active scenario")
+    profile: SignerProfile = Field(default_factory=SignerProfile, description="Signer profile settings")
     session_id: str = Field(default="default", description="Conversation session ID")
 
 
-class InterpretResponse(BaseModel):
-    """Stage A structured interpretation output."""
-    sentence: str = Field(..., description="Synthesized fluent English sentence")
-    intent: IntentEnum = Field(..., description="Classified intent enum")
-    intent_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in intent classification")
-    needs_confirmation: bool = Field(default=False, description="Whether human confirmation is recommended")
-    ambiguity_note: str | None = Field(default=None, description="Explanation if ambiguous or low confidence")
+class ComposeResponse(BaseModel):
+    """Validated structured output from LLM Compose call."""
 
-
-class RespondRequest(BaseModel):
-    """Request payload for Stage B Respond."""
-    sentence: str = Field(..., description="Interpreted sentence")
-    intent: IntentEnum = Field(default=IntentEnum.UNCLEAR, description="Interpreted intent")
-    session_id: str = Field(default="default", description="Conversation session ID")
-
-
-class RespondResponse(BaseModel):
-    """Stage B conversational response output."""
-    reply: str = Field(..., description="Short, plain-language conversational reply (max ~2 sentences)")
-    quick_replies: list[str] = Field(default_factory=list, description="Up to 3 quick response suggestions")
-
-
-class PipelineRequest(BaseModel):
-    """End-to-end request payload for Stage A + Stage B."""
-    tokens: list[RecognizedToken] = Field(..., description="Sequence of sign glosses")
-    session_id: str = Field(default="default", description="Conversation session ID")
-
-
-class PipelineResponse(BaseModel):
-    """End-to-end pipeline response combining Stage A and Stage B."""
-    interpretation: InterpretResponse = Field(..., description="Stage A interpretation result")
-    reply: str = Field(..., description="Stage B conversational reply")
-    quick_replies: list[str] = Field(default_factory=list, description="Quick tap suggestions")
-
-
-class ChatMessage(BaseModel):
-    """A message entry in the conversation history."""
-    role: str = Field(..., description="Role: 'user', 'assistant', or 'system'")
-    content: str = Field(..., description="Message text content")
-    intent: str | None = Field(default=None, description="Intent for user turns")
-    tokens: list[RecognizedToken] | None = Field(default=None, description="Source tokens if available")
+    sentence: str = Field(..., description="Composed first-person English sentence spoken as the signer")
+    alternatives: list[str] = Field(
+        default_factory=list,
+        max_length=2,
+        description="Up to 2 alternative phrasing options if ambiguity exists",
+    )
+    intent: IntentEnum = Field(default=IntentEnum.STATEMENT, description="Classified intent")
+    tone: str = Field(default="polite", description="Detected/applied tone")
+    needs_confirmation: bool = Field(
+        default=False,
+        description="Whether human confirmation is recommended (e.g. low confidence or ambiguity)",
+    )
+    ambiguity_note: str | None = Field(
+        default=None,
+        description="Explanation note if glosses were ambiguous or missing information",
+    )
 
 
 class ErrorResponse(BaseModel):
     """Standardized API error response."""
+
     error: str = Field(..., description="Short error code")
     message: str = Field(..., description="Human-readable error description")
     detail: str | None = Field(default=None, description="Optional extra detail")

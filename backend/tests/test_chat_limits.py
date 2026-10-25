@@ -1,4 +1,4 @@
-"""Tests for chat endpoint security limits (input size + rate limiting)."""
+"""Tests for compose endpoint security limits (input size + rate limiting)."""
 
 import sys
 import time
@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "backend"
 
 import pytest
 
-from app.api import chat as chat_mod
-from app.api.chat import (
+from app.api import compose as compose_mod
+from app.api.compose import (
     MAX_TOKENS_PER_REQUEST,
     MAX_TOTAL_CHARS_PER_REQUEST,
     RATE_LIMIT_MAX_REQUESTS,
@@ -43,25 +43,25 @@ def test_input_limits_rejects_too_many_chars():
 
 def test_rate_limit_allows_within_window():
     session_id = "sess-test-1"
-    chat_mod._request_timestamps[session_id] = deque()
+    compose_mod._request_timestamps[session_id] = deque()
     for _ in range(5):
         _enforce_rate_limit(session_id)  # should not raise
 
 
 def test_rate_limit_rejects_over_limit():
     session_id = "sess-test-2"
-    chat_mod._request_timestamps[session_id] = deque()
+    compose_mod._request_timestamps[session_id] = deque()
     # Set all timestamps to now so they're within the window
     now = time.time()
-    chat_mod._request_timestamps[session_id] = deque([now] * RATE_LIMIT_MAX_REQUESTS)
+    compose_mod._request_timestamps[session_id] = deque([now] * RATE_LIMIT_MAX_REQUESTS)
     with pytest.raises(HTTPException):
         _enforce_rate_limit(session_id)
 
 
 def test_rate_limit_resets_after_window():
     session_id = "sess-test-3"
-    chat_mod._request_timestamps[session_id] = deque()
+    compose_mod._request_timestamps[session_id] = deque()
     # Old timestamps outside the window should be dropped
-    old = time.time() - chat_mod.RATE_LIMIT_WINDOW_SECONDS - 10
-    chat_mod._request_timestamps[session_id] = deque([old] * RATE_LIMIT_MAX_REQUESTS)
+    old = time.time() - compose_mod.RATE_LIMIT_WINDOW_SECONDS - 10
+    compose_mod._request_timestamps[session_id] = deque([old] * RATE_LIMIT_MAX_REQUESTS)
     _enforce_rate_limit(session_id)  # should not raise (old ones dropped)

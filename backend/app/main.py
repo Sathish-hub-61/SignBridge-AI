@@ -7,8 +7,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.chat import router as chat_router
 from app.api.collect import router as collect_router
+from app.api.compose import router as compose_router
 from app.api.health import router as health_router
 from app.api.stream_ws import router as stream_router
 from app.config import get_settings
@@ -55,6 +55,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
@@ -65,7 +67,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
-app.include_router(chat_router)
+app.include_router(compose_router)
 app.include_router(collect_router)
 app.include_router(stream_router)
 

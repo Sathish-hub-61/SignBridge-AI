@@ -9,17 +9,17 @@ The exported model expects input (batch, window, input_dim) and emits
 """
 
 import json
+import sys
 from pathlib import Path
 
 import torch
 
-import sys
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
-from ml.train import INPUT_DIM, REPORTS_DIR, WINDOW, WEIGHTS_DIR
 from app.recognition.model import create_model
+
+from ml.train import INPUT_DIM, REPORTS_DIR, WEIGHTS_DIR, WINDOW
 
 EXPORT_PATH = WEIGHTS_DIR / "best_model.onnx"
 SUMMARY_PATH = REPORTS_DIR / "training_summary.json"
@@ -76,7 +76,7 @@ def main() -> None:
         )
         print(f"[export_onnx] Exported {best_arch} -> {EXPORT_PATH}")
         print(f"[export_onnx] Input: (batch, {WINDOW}, {INPUT_DIM})  Output: (batch, {num_classes})")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001  (intentional: catch any export failure, fall back to PyTorch checkpoint)
         print(f"[export_onnx] ONNX export failed: {exc}")
         print("[export_onnx] Falling back: PyTorch checkpoint remains the inference source.")
         print("[export_onnx] Install a working onnx package to enable ONNX export.")

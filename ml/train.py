@@ -19,24 +19,21 @@ import os
 os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
 os.environ.setdefault("TORCH_COMPILE_DISABLE", "1")
 
-import glob
 import json
-import math
 import os
 import random
+import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.utils.data import DataLoader, Dataset
-
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
-from app.recognition.model import ARCHITECTURES, create_model, list_architectures
+from app.recognition.model import create_model, list_architectures
 
 WINDOW = 32
 INPUT_DIM = 193
@@ -68,8 +65,8 @@ class SignClipDataset(Dataset):
 
     def __init__(
         self,
-        clips: List[Dict[str, Any]],
-        label_to_idx: Dict[str, int],
+        clips: list[dict[str, Any]],
+        label_to_idx: dict[str, int],
         window: int = WINDOW,
         augment: bool = False,
         seed: int = RANDOM_SEED,
@@ -78,7 +75,7 @@ class SignClipDataset(Dataset):
         self.window = window
         self.augment = augment
         self.rng = random.Random(seed)
-        self.samples: List[Tuple[np.ndarray, int]] = []
+        self.samples: list[tuple[np.ndarray, int]] = []
         for clip in clips:
             features = np.asarray(clip["features"], dtype=np.float32)  # (T, 193)
             label_idx = label_to_idx[clip["label"]]
@@ -106,7 +103,7 @@ class SignClipDataset(Dataset):
             features[drop_idx] = 0.0
         return features
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
         features, label_idx = self.samples[idx]
         features = self._resample(features).astype(np.float32)
         if self.augment:
@@ -114,15 +111,14 @@ class SignClipDataset(Dataset):
         return torch.from_numpy(features), label_idx
 
 
-def load_clips(data_dir: Path = DATA_DIR) -> List[Dict[str, Any]]:
+def load_clips(data_dir: Path = DATA_DIR) -> list[dict[str, Any]]:
     """Load all clips from data_dir/*.jsonl.
 
     Each line: {"label", "signer_id", "session_id", "features": [[193], ...]}
     """
-    clips: List[Dict[str, Any]] = []
+    clips: list[dict[str, Any]] = []
     files = sorted(data_dir.glob("*.jsonl"))
     for fpath in files:
-        label = fpath.stem
         with open(fpath, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -141,7 +137,7 @@ def load_clips(data_dir: Path = DATA_DIR) -> List[Dict[str, Any]]:
     return clips
 
 
-def generate_smoke_dataset(num_classes: int = 6, clips_per_class: int = 20) -> List[Dict[str, Any]]:
+def generate_smoke_dataset(num_classes: int = 6, clips_per_class: int = 20) -> list[dict[str, Any]]:
     """Generate a tiny synthetic smoke dataset ONLY to test the pipeline runs.
 
     Results from this data are NOT real and must be stamped
@@ -149,7 +145,7 @@ def generate_smoke_dataset(num_classes: int = 6, clips_per_class: int = 20) -> L
     """
     global SMOKE_MODE
     SMOKE_MODE = True
-    clips: List[Dict[str, Any]] = []
+    clips: list[dict[str, Any]] = []
     rng = random.Random(1234)
     signers = ["smoke_signer_01", "smoke_signer_02", "smoke_signer_03"]
     for ci in range(num_classes):
@@ -175,12 +171,12 @@ def generate_smoke_dataset(num_classes: int = 6, clips_per_class: int = 20) -> L
 
 
 def signer_aware_split(
-    clips: List[Dict[str, Any]],
+    clips: list[dict[str, Any]],
     train_frac: float = 0.8,
     val_frac: float = 0.1,
     test_frac: float = 0.1,
     seed: int = RANDOM_SEED,
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """Split clips by signer_id to avoid leakage.
 
     Raises ValueError if any signer appears in more than one split.
@@ -209,7 +205,7 @@ def signer_aware_split(
     test_signers = set(signers[n_train + n_val : n_train + n_val + n_test])
 
     # Leakage check: each clip's signer must belong to exactly one split
-    split_of: Dict[str, str] = {}
+    split_of: dict[str, str] = {}
     for s in train_signers:
         split_of[s] = "train"
     for s in val_signers:
@@ -256,7 +252,7 @@ def train_one_epoch(
 
 def evaluate_model(
     model: nn.Module, loader: DataLoader, device: str
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """Return (avg_loss, accuracy) on a loader."""
     model.eval()
     total_loss = 0.0
@@ -276,15 +272,15 @@ def evaluate_model(
 
 def train_architecture(
     architecture: str,
-    train_clips: List[Dict[str, Any]],
-    val_clips: List[Dict[str, Any]],
-    labels: List[str],
+    train_clips: list[dict[str, Any]],
+    val_clips: list[dict[str, Any]],
+    labels: list[str],
     epochs: int = 20,
     batch_size: int = 16,
     lr: float = 1e-3,
     patience: int = 5,
     device: str = "cpu",
-) -> Tuple[nn.Module, float, Dict[str, Any]]:
+) -> tuple[nn.Module, float, dict[str, Any]]:
     """Train one architecture. Returns (best_model, best_val_acc, history)."""
     label_to_idx = {label: i for i, label in enumerate(labels)}
     num_classes = len(labels)
@@ -313,7 +309,7 @@ def train_architecture(
     best_state = None
     best_val_acc = -1.0
     patience_counter = 0
-    history: Dict[str, Any] = {"train_loss": [], "val_loss": [], "val_acc": []}
+    history: dict[str, Any] = {"train_loss": [], "val_loss": [], "val_acc": []}
 
     for epoch in range(epochs):
         train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)

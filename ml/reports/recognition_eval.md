@@ -16,9 +16,9 @@
 
 | Architecture | Top-1 Acc | Top-3 Acc | Model Size (MB) | Latency (ms/sign) | Checkpoint |
 |---|---|---|---|---|---|
-| cnn1d | 1.0000 | 1.0000 | 0.25 | 0.59 | ml\weights\cnn1d_best.pt |
-| bigru | 1.0000 | 1.0000 | 0.67 | 1.82 | ml\weights\bigru_best.pt |
-| transformer | 1.0000 | 1.0000 | 0.32 | 0.63 | ml\weights\transformer_best.pt |
+| cnn1d | 1.0000 | 1.0000 | 0.25 | 0.34 | ml\weights\cnn1d_best.pt |
+| bigru | 1.0000 | 1.0000 | 0.67 | 1.02 | ml\weights\bigru_best.pt |
+| transformer | 1.0000 | 1.0000 | 0.32 | 0.34 | ml\weights\transformer_best.pt |
 
 ## Per-class metrics — best architecture (cnn1d)
 

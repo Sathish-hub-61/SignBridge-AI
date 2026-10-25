@@ -6,6 +6,8 @@ import {
   FilesetResolver,
   HandLandmarker,
   PoseLandmarker,
+} from "@mediapipe/tasks-vision";
+import type {
   FaceLandmarkerResult,
   HandLandmarkerResult,
   PoseLandmarkerResult,

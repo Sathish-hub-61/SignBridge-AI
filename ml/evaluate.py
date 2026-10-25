@@ -13,27 +13,27 @@ If the data source is the synthetic smoke dataset, the report is stamped
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import matplotlib
 
 matplotlib.use("Agg")
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from sklearn.metrics import (
     confusion_matrix,
-    f1_score,
     precision_recall_fscore_support,
 )
-
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
+from app.recognition.model import create_model, list_architectures
+
 from ml.train import (
-    DATA_DIR,
     INPUT_DIM,
     REPORTS_DIR,
     WINDOW,
@@ -41,7 +41,6 @@ from ml.train import (
     load_clips,
     signer_aware_split,
 )
-from app.recognition.model import ARCHITECTURES, create_model, list_architectures
 
 REPORT_PATH = REPORTS_DIR / "recognition_eval.md"
 CONFUSION_PNG = REPORTS_DIR / "confusion_matrix.png"
@@ -53,7 +52,7 @@ FACE_END = INPUT_DIM - 4  # 189
 MASK_START = INPUT_DIM - 4  # 189
 
 
-def load_summary() -> Dict[str, Any]:
+def load_summary() -> dict[str, Any]:
     if SUMMARY_PATH.exists():
         with open(SUMMARY_PATH, "r") as f:
             return json.load(f)
@@ -61,8 +60,8 @@ def load_summary() -> Dict[str, Any]:
 
 
 def load_test_data(
-    labels: List[str], is_smoke: bool
-) -> Tuple[List[Dict[str, Any]], bool]:
+    labels: list[str], is_smoke: bool
+) -> tuple[list[dict[str, Any]], bool]:
     """Load test clips. If no real data, generate smoke data (is_smoke=True)."""
     clips = load_clips()
     actually_smoke = is_smoke or len(clips) == 0
@@ -185,10 +184,10 @@ def main() -> None:
     test_clips, actually_smoke = load_test_data(labels, is_smoke)
     print(f"Evaluating on {len(test_clips)} test clips ({'SMOKE' if actually_smoke else 'real'} data)")
 
-    lines: List[str] = []
+    lines: list[str] = []
     lines.append("# ISL Sign Recognition — Evaluation Report")
     lines.append("")
-    lines.append(f"- **Data source:** ml/datasets/ (gitignored)")
+    lines.append("- **Data source:** ml/datasets/ (gitignored)")
     lines.append(f"- **Test clips:** {len(test_clips)}")
     lines.append(f"- **Classes ({num_classes}):** {', '.join(labels)}")
     lines.append(f"- **Device:** {device} (CPU)")
@@ -207,10 +206,9 @@ def main() -> None:
     lines.append("| Architecture | Top-1 Acc | Top-3 Acc | Model Size (MB) | Latency (ms/sign) | Checkpoint |")
     lines.append("|---|---|---|---|---|---|")
 
-    results: Dict[str, Dict[str, Any]] = {}
+    results: dict[str, dict[str, Any]] = {}
     for arch in list_architectures():
         ckpt_path = WEIGHTS_DIR / f"{arch}_best.pt"
-        labels_path = WEIGHTS_DIR / f"{arch}_labels.json"
         if not ckpt_path.exists():
             lines.append(f"| {arch} | — | — | — | — | not trained |")
             results[arch] = {"trained": False}
