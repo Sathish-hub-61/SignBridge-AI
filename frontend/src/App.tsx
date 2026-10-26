@@ -78,6 +78,9 @@ export const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showListenerView, setShowListenerView] = useState<boolean>(false);
 
+  const [sessionId] = useState<string>(() => "session-" + Math.random().toString(36).substring(2, 9));
+  const [view, setView] = useState<"chat" | "collect">("chat");
+
   const [recognitionStatus, setRecognitionStatus] = useState<string>("Idle");
   const [recognitionError, setRecognitionError] = useState<string | null>(null);
 
@@ -105,8 +108,6 @@ export const App: React.FC = () => {
     onStatus: setRecognitionStatus,
   });
 
-  const [sessionId] = useState<string>(() => "session-" + Math.random().toString(36).substring(2, 9));
-  const [view, setView] = useState<"chat" | "collect">("chat");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -596,7 +597,7 @@ export const App: React.FC = () => {
                             onChange={(e) => handleEditToken(t.id, e.target.value)}
                             aria-label={`Edit token ${t.token}`}
                           />
-                          <button
+                          <input
                             className="chip-conf-slider"
                             type="range"
                             min="0"
@@ -832,3 +833,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
+export default App;

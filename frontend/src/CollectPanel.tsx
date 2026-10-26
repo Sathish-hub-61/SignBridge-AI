@@ -20,11 +20,11 @@ const MODEL_BASE =
   "https://storage.googleapis.com/mediapipe-models/";
 
 const HAND_MODEL_URL =
-  MODEL_BASE + "hand_landmarker/float16/1/hand_landmarker.task";
+  MODEL_BASE + "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 const POSE_MODEL_URL =
-  MODEL_BASE + "pose_landmarker/float16/1/pose_landmarker.task";
+  MODEL_BASE + "pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 const FACE_MODEL_URL =
-  MODEL_BASE + "face_landmarker/float16/1/face_landmarker.task";
+  MODEL_BASE + "face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 interface RawLandmark {
   x: number;
@@ -283,8 +283,8 @@ export const CollectPanel: React.FC = () => {
             video,
             nowMs
           ) as FaceLandmarkerResult;
-          if (faceResult.landmarks[0]) {
-            results.face = faceResult.landmarks[0].map((lm) => ({
+          if (faceResult.faceLandmarks && faceResult.faceLandmarks[0]) {
+            results.face = faceResult.faceLandmarks[0].map((lm: { x: number; y: number; z: number }) => ({
               x: lm.x,
               y: lm.y,
               z: lm.z,
@@ -327,7 +327,7 @@ export const CollectPanel: React.FC = () => {
               frames: [framePayload],
             })
           );
-          setCurrentClipFrames((prev) => [...prev, features]);
+          setCurrentClipFrames((prev) => [...prev, Array.from(features)]);
         } catch {
           // ignore feature errors during streaming
         }

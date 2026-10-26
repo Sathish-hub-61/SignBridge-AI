@@ -17,11 +17,11 @@ const MODEL_BASE =
   "https://storage.googleapis.com/mediapipe-models/";
 
 const HAND_MODEL_URL =
-  MODEL_BASE + "hand_landmarker/float16/1/hand_landmarker.task";
+  MODEL_BASE + "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 const POSE_MODEL_URL =
-  MODEL_BASE + "pose_landmarker/float16/1/pose_landmarker.task";
+  MODEL_BASE + "pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 const FACE_MODEL_URL =
-  MODEL_BASE + "face_landmarker/float16/1/face_landmarker.task";
+  MODEL_BASE + "face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
 interface RawLandmark {
   x: number;
@@ -176,14 +176,14 @@ export function useSignRecognition({
         }
         if (poseRef.current) {
           const pr = poseRef.current.detectForVideo(video, nowMs) as PoseLandmarkerResult;
-          if (pr.landmarks[0]) {
-            results.pose = pr.landmarks[0].map((lm) => ({ x: lm.x, y: lm.y, z: lm.z }));
+          if (pr.landmarks && pr.landmarks[0]) {
+            results.pose = pr.landmarks[0].map((lm: { x: number; y: number; z: number }) => ({ x: lm.x, y: lm.y, z: lm.z }));
           }
         }
         if (faceRef.current) {
           const fr = faceRef.current.detectForVideo(video, nowMs) as FaceLandmarkerResult;
-          if (fr.landmarks[0]) {
-            results.face = fr.landmarks[0].map((lm) => ({ x: lm.x, y: lm.y, z: lm.z }));
+          if (fr.faceLandmarks && fr.faceLandmarks[0]) {
+            results.face = fr.faceLandmarks[0].map((lm: { x: number; y: number; z: number }) => ({ x: lm.x, y: lm.y, z: lm.z }));
           }
         }
       } catch {
